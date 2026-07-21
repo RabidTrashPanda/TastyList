@@ -163,3 +163,24 @@ test('legacy garlic data merges with an existing base-food record', () => {
   assert.deepEqual(garlic.preparations, ['raw', 'roasted']);
   assert.equal(garlic.notes, 'Small amounts · Roasted is great');
 });
+
+test('preparation-specific preferences survive normalization', () => {
+  const profile = createProfile('Sam');
+  profile.items.broccoli = {
+    tolerance: 'tolerate',
+    rating: 3,
+    preparations: [],
+    preparationPreferences: {
+      raw: 'enjoy',
+      steamed: 'refuse'
+    },
+    notes: ''
+  };
+  const state = createEmptyState();
+  state.profiles[profile.id] = profile;
+
+  const broccoli = normalizeState(state).profiles[profile.id].items.broccoli;
+  assert.equal(broccoli.tolerance, 'tolerate');
+  assert.equal(broccoli.preparationPreferences.raw, 'enjoy');
+  assert.equal(broccoli.preparationPreferences.steamed, 'refuse');
+});

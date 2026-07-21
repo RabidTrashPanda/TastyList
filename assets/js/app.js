@@ -15,6 +15,7 @@ import {
 import { compareProfiles, describeItem } from './compare.js';
 import { decodeShareCode, encodeShareCode } from './share.js';
 import { matchDish } from './dish.js';
+import { nextPreference, preferenceLabel } from './preference.js';
 
 let state = loadState();
 const compareSelectionIds = [null, null, null];
@@ -138,11 +139,12 @@ function printActiveProfile() {
     table.append(head);
 
     const body = document.createElement('tbody');
-    for (const catalogItem of category.items) {
+    for (const catalogItem of [...category.items].sort((left, right) => left.name.localeCompare(right.name))) {
       const item = profile.items[itemKey(catalogItem.name)] ?? {
         tolerance: null,
         rating: 0,
         preparations: [],
+        preparationPreferences: {},
         notes: ''
       };
       const row = document.createElement('tr');
@@ -150,7 +152,7 @@ function printActiveProfile() {
         catalogItem.name,
         item.tolerance ? capitalize(item.tolerance) : 'Not rated',
         item.rating ? `${item.rating}/5` : '—',
-        item.preparations.length ? item.preparations.join(', ') : '—',
+        formatPreparationPreferences(item),
         item.notes || '—'
       ];
       for (const value of values) {
@@ -229,10 +231,12 @@ function renderEditor() {
       continue;
     }
 
-    const visibleItems = category.items.filter(item => {
-      const haystack = [item.name, ...(item.aliases ?? [])].join(' ').toLowerCase();
-      return !query || haystack.includes(query);
-    });
+    const visibleItems = category.items
+      .filter(item => {
+        const haystack = [item.name, ...(item.aliases ?? [])].join(' ').toLowerCase();
+        return !query || haystack.includes(query);
+      })
+      .sort((left, right) => left.name.localeCompare(right.name));
 
     if (visibleItems.length === 0) {
       continue;
@@ -267,10 +271,14 @@ function buildEditorRow(profile, catalogItem, preparations) {
     tolerance: null,
     rating: 0,
     preparations: [],
+    preparationPreferences: {},
     notes: ''
   };
   const row = document.createElement('article');
   row.className = 'food-card';
+
+  const header = document.createElement('div');
+  header.className = 'food-card__header';
 
   const titleWrap = document.createElement('div');
   titleWrap.className = 'food-card__title';
@@ -284,32 +292,22 @@ function buildEditorRow(profile, catalogItem, preparations) {
     titleWrap.append(note);
   }
 
-  row.append(titleWrap);
-
-  const tolerance = document.createElement('div');
-  tolerance.className = 'segmented';
-  tolerance.setAttribute('aria-label', `Tolerance for ${catalogItem.name}`);
-  for (const value of ['refuse', 'tolerate', 'enjoy']) {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.textContent = capitalize(value);
-    button.className = item.tolerance === value ? 'is-active' : '';
-    button.dataset.value = value;
-    button.addEventListener('click', () => {
+  const overall = createPreferenceButton(
+    item.tolerance,
+    `Overall preference for ${catalogItem.name}`,
+    'Overall',
+    nextValue => {
       const storedItem = getOrCreateItem(profile, catalogItemKey);
-      storedItem.tolerance = storedItem.tolerance === value ? null : value;
-      if (storedItem.tolerance === 'refuse') {
+      storedItem.tolerance = nextValue;
+      if (nextValue === 'refuse') {
         storedItem.rating = 0;
-        storedItem.preparations = [];
       }
       touchProfile(profile);
       persist();
       renderEditor();
       renderCompareResults();
-    });
-    tolerance.append(button);
-  }
-  row.append(tolerance);
+    }
+  );
 
   const rating = document.createElement('div');
   rating.className = 'rating';
@@ -332,28 +330,45 @@ function buildEditorRow(profile, catalogItem, preparations) {
     });
     rating.append(button);
   }
-  row.append(rating);
 
-  const prep = document.createElement('div');
-  prep.className = 'chips';
+  header.append(titleWrap, overall, rating);
+  row.append(header);
+
+  const prepList = document.createElement('div');
+  prepList.className = 'preference-list';
   for (const preparation of preparations) {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.textContent = preparation;
-    button.className = item.preparations.includes(preparation) ? 'is-active' : '';
-    button.disabled = item.tolerance === 'refuse';
-    button.addEventListener('click', () => {
-      const storedItem = getOrCreateItem(profile, catalogItemKey);
-      storedItem.preparations = storedItem.preparations.includes(preparation)
-        ? storedItem.preparations.filter(value => value !== preparation)
-        : [...storedItem.preparations, preparation];
-      touchProfile(profile);
-      persist();
-      renderEditor();
-    });
-    prep.append(button);
+    const value = item.preparationPreferences?.[preparation] ?? null;
+    const prepRow = document.createElement('div');
+    prepRow.className = 'preference-row';
+
+    const label = document.createElement('span');
+    label.className = 'preference-row__label';
+    label.textContent = preparation;
+
+    const control = createPreferenceButton(
+      value,
+      `${preparation} preference for ${catalogItem.name}`,
+      value ? preferenceLabel(value) : 'Uses overall',
+      nextValue => {
+        const storedItem = getOrCreateItem(profile, catalogItemKey);
+        storedItem.preparationPreferences ??= {};
+        if (nextValue) {
+          storedItem.preparationPreferences[preparation] = nextValue;
+        } else {
+          delete storedItem.preparationPreferences[preparation];
+        }
+        storedItem.preparations = Object.keys(storedItem.preparationPreferences);
+        touchProfile(profile);
+        persist();
+        renderEditor();
+        renderCompareResults();
+      }
+    );
+
+    prepRow.append(label, control);
+    prepList.append(prepRow);
   }
-  row.append(prep);
+  row.append(prepList);
 
   const notes = document.createElement('label');
   notes.className = 'notes-field';
@@ -362,7 +377,7 @@ function buildEditorRow(profile, catalogItem, preparations) {
   input.type = 'text';
   input.maxLength = 500;
   input.value = item.notes;
-  input.placeholder = 'Texture, preparation, exceptions…';
+  input.placeholder = '';
   input.addEventListener('change', () => {
     const storedItem = getOrCreateItem(profile, catalogItemKey);
     storedItem.notes = input.value.trim();
@@ -373,6 +388,18 @@ function buildEditorRow(profile, catalogItem, preparations) {
   row.append(notes);
 
   return row;
+}
+
+function createPreferenceButton(value, ariaLabel, emptyLabel, onChange) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'preference-button';
+  button.dataset.preference = value ?? 'unset';
+  button.textContent = value ? preferenceLabel(value) : emptyLabel;
+  button.setAttribute('aria-label', `${ariaLabel}: ${preferenceLabel(value)}`);
+  button.title = 'Click to cycle: enjoy, tolerate, refuse, unset';
+  button.addEventListener('click', () => onChange(nextPreference(value)));
+  return button;
 }
 
 function renderCompareSelectors() {
@@ -721,6 +748,19 @@ function classificationLabel(value) {
 
 function fileSafe(value) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'profile';
+}
+
+function formatPreparationPreferences(item) {
+  const entries = Object.entries(item.preparationPreferences ?? {})
+    .sort(([left], [right]) => left.localeCompare(right));
+
+  if (entries.length === 0) {
+    return '—';
+  }
+
+  return entries
+    .map(([name, value]) => `${name}: ${preferenceLabel(value)}`)
+    .join(', ');
 }
 
 function capitalize(value) {

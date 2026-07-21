@@ -27,3 +27,29 @@ test('comparison identifies shared likes', () => {
   const rows = compareProfiles(profiles, items);
   assert.equal(rows[0].classification, 'sharedLike');
 });
+
+test('comparison detects a conflict in a preparation override', () => {
+  const profiles = [
+    {
+      items: {
+        broccoli: {
+          tolerance: 'tolerate',
+          rating: 3,
+          preparationPreferences: { raw: 'enjoy' }
+        }
+      }
+    },
+    {
+      items: {
+        broccoli: {
+          tolerance: 'tolerate',
+          rating: 3,
+          preparationPreferences: { raw: 'refuse' }
+        }
+      }
+    }
+  ];
+
+  const rows = compareProfiles(profiles, items);
+  assert.equal(rows[0].classification, 'conflict');
+});

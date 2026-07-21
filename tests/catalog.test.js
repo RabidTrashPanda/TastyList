@@ -54,3 +54,10 @@ test('food names do not embed preparation methods', () => {
 
   assert.deepEqual(offenders, []);
 });
+
+test('foods are alphabetically sorted within every category', () => {
+  for (const category of Object.values(categories)) {
+    const names = category.items.map(item => item.name);
+    assert.deepEqual(names, [...names].sort((left, right) => left.localeCompare(right)));
+  }
+});

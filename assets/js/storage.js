@@ -1,5 +1,6 @@
 const STORAGE_KEY = 'tastylist.state';
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
+const SUPPORTED_SCHEMA_VERSIONS = new Set([1, 2]);
 const BACKUP_FORMAT = 'tastylist-backup';
 const BACKUP_VERSION = 1;
 
@@ -98,6 +99,9 @@ export function normalizeProfile(input, fallbackId = null) {
       if (legacyMapping?.preparation && !item.preparations.includes(legacyMapping.preparation)) {
         item.preparations.push(legacyMapping.preparation);
       }
+      if (legacyMapping?.preparation && item.tolerance) {
+        item.preparationPreferences[legacyMapping.preparation] = item.tolerance;
+      }
 
       if (hasItemData(item)) {
         items[key] = items[key] ? mergeItems(items[key], item) : item;
@@ -125,6 +129,7 @@ export function getOrCreateItem(profile, key) {
       tolerance: null,
       rating: 0,
       preparations: [],
+      preparationPreferences: {},
       notes: ''
     };
   }
@@ -200,7 +205,7 @@ function isStateDocument(value) {
   return Boolean(
     value
     && typeof value === 'object'
-    && value.schemaVersion === SCHEMA_VERSION
+    && SUPPORTED_SCHEMA_VERSIONS.has(value.schemaVersion)
     && value.profiles
     && typeof value.profiles === 'object'
     && !Array.isArray(value.profiles)
@@ -219,6 +224,10 @@ function mergeItems(existing, incoming) {
     tolerance: existing.tolerance ?? incoming.tolerance,
     rating: Math.max(existing.rating, incoming.rating),
     preparations: [...new Set([...existing.preparations, ...incoming.preparations])],
+    preparationPreferences: {
+      ...incoming.preparationPreferences,
+      ...existing.preparationPreferences
+    },
     notes
   };
 }
@@ -228,6 +237,7 @@ function hasItemData(item) {
     item.tolerance
     || item.rating > 0
     || item.preparations.length > 0
+    || Object.keys(item.preparationPreferences).length > 0
     || item.notes
   );
 }
@@ -246,10 +256,29 @@ function normalizeItem(input) {
         .filter(([, enabled]) => Boolean(enabled))
         .map(([name]) => name);
 
+  const preparationPreferences = {};
+  if (input?.preparationPreferences && typeof input.preparationPreferences === 'object') {
+    for (const [name, value] of Object.entries(input.preparationPreferences)) {
+      if (typeof name === 'string' && ['refuse', 'tolerate', 'enjoy'].includes(value)) {
+        preparationPreferences[name] = value;
+      }
+    }
+  }
+
+  // Legacy selected preparations inherit the item's overall preference.
+  // They stay in the payload for backward compatibility, but new edits use
+  // preparationPreferences as the authoritative per-preparation override map.
+  for (const preparation of preparations) {
+    if (!preparationPreferences[preparation] && tolerance) {
+      preparationPreferences[preparation] = tolerance;
+    }
+  }
+
   return {
     tolerance,
     rating,
     preparations,
+    preparationPreferences,
     notes: typeof input?.notes === 'string' ? input.notes.slice(0, 500) : ''
   };
 }

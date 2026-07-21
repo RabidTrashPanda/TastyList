@@ -5,6 +5,8 @@ TastyList is a privacy-first static web app for building food preference profile
 ## Features
 
 - Multiple profiles stored in the current browser
+- Overall food preferences with preparation-specific overrides
+- Alphabetical foods within every category
 - Stable profile IDs, so renaming a profile does not break its data
 - Local and imported guest profiles
 - Two-person and three-person comparison tables

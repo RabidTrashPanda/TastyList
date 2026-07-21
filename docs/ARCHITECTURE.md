@@ -7,7 +7,8 @@ TastyList is intentionally a static, browser-only application.
 - `app.js` owns browser events and rendering.
 - `storage.js` owns schema validation, profile identity, browser persistence, backup, and import/export.
 - `catalog.js` owns the stable food catalog.
-- `compare.js` owns comparison classification.
+- `preference.js` owns preference cycling and overall/preparation resolution.
+- `compare.js` owns comparison classification, including preparation overrides.
 - `dish.js` owns ingredient matching.
 - `share.js` owns versioned share-code encoding.
 
@@ -26,7 +27,14 @@ The current schema stores one versioned state document:
       kind,
       createdAt,
       updatedAt,
-      items
+      items: {
+        "<food key>": {
+          tolerance,
+          rating,
+          preparationPreferences,
+          notes
+        }
+      }
     }
   }
 }

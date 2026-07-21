@@ -1,19 +1,20 @@
+import { preferenceLabel, resolvePreference } from './preference.js';
+
 export function compareProfiles(profiles, flatItems) {
   const rows = [];
 
   for (const entry of flatItems) {
     const values = profiles.map(profile => profile.items[entry.key] ?? null);
-    if (values.every(value => !value?.tolerance)) {
+    if (values.every(value => !hasPreferenceData(value))) {
       continue;
     }
 
-    const scores = values.map(scoreItem);
     rows.push({
       key: entry.key,
       name: entry.name,
       category: entry.category,
       values,
-      classification: classify(scores)
+      classification: classifyItemAcrossPreparations(values)
     });
   }
 
@@ -26,36 +27,73 @@ export function compareProfiles(profiles, flatItems) {
 }
 
 export function describeItem(item) {
-  if (!item?.tolerance) {
+  if (!hasPreferenceData(item)) {
     return 'Not rated';
   }
 
-  if (item.tolerance === 'refuse') {
-    return 'Refuse';
+  const parts = [];
+  if (item.tolerance) {
+    const stars = item.tolerance !== 'refuse' && item.rating > 0
+      ? ` ${'★'.repeat(item.rating)}`
+      : '';
+    parts.push(`Overall: ${preferenceLabel(item.tolerance)}${stars}`);
   }
 
-  const stars = item.rating > 0 ? ` · ${'★'.repeat(item.rating)}` : '';
-  return `${capitalize(item.tolerance)}${stars}`;
+  const overrides = Object.entries(item.preparationPreferences ?? {})
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([name, value]) => `${name}: ${preferenceLabel(value)}`);
+
+  parts.push(...overrides);
+  return parts.join(' · ');
 }
 
-function scoreItem(item) {
-  if (!item?.tolerance) {
+function classifyItemAcrossPreparations(values) {
+  const contexts = new Set(['overall']);
+  for (const item of values) {
+    for (const preparation of Object.keys(item?.preparationPreferences ?? {})) {
+      contexts.add(preparation);
+    }
+  }
+
+  const classifications = [...contexts].map(context => {
+    const scores = values.map(item => scorePreference(
+      context === 'overall' ? item?.tolerance ?? null : resolvePreference(item, context),
+      context === 'overall' ? item?.rating ?? 0 : 0
+    ));
+    return classify(scores);
+  });
+
+  if (classifications.includes('conflict')) return 'conflict';
+  if (classifications.includes('sharedLike')) return 'sharedLike';
+  if (classifications.every(value => value === 'sharedDislike')) return 'sharedDislike';
+  return 'mixed';
+}
+
+function hasPreferenceData(item) {
+  return Boolean(
+    item?.tolerance
+    || Object.keys(item?.preparationPreferences ?? {}).length > 0
+  );
+}
+
+function scorePreference(preference, rating) {
+  if (!preference) {
     return null;
   }
 
-  if (item.tolerance === 'refuse') {
+  if (preference === 'refuse') {
     return -1;
   }
 
-  if (item.tolerance === 'tolerate') {
-    return item.rating >= 4 ? 1 : 0;
+  if (preference === 'tolerate') {
+    return rating >= 4 ? 1 : 0;
   }
 
-  if (item.rating >= 4) {
+  if (rating >= 4) {
     return 2;
   }
 
-  return item.rating <= 2 ? 0 : 1;
+  return rating <= 2 && rating > 0 ? 0 : 1;
 }
 
 function classify(scores) {
@@ -79,8 +117,4 @@ function classify(scores) {
   }
 
   return 'mixed';
-}
-
-function capitalize(value) {
-  return value.charAt(0).toUpperCase() + value.slice(1);
 }

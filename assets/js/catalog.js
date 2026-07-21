@@ -1493,6 +1493,11 @@ export const categories = {
   }
 };
 
+
+for (const category of Object.values(categories)) {
+  category.items.sort((left, right) => left.name.localeCompare(right.name));
+}
+
 export function itemKey(name) {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
 }
@@ -1504,6 +1509,7 @@ export const flatItems = Object.entries(categories).flatMap(([category, data]) =
     category,
     aliases: item.aliases,
     note: item.note,
-    isAnomaly: item.isAnomaly
+    isAnomaly: item.isAnomaly,
+    preparations: data.preps
   }))
 );

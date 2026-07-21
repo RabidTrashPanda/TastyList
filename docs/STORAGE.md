@@ -6,6 +6,7 @@ TastyList uses `localStorage` because the data set is small, must survive browse
 
 - State is written after every profile change.
 - The state schema is versioned.
+- Each food can store an overall preference plus preparation-specific overrides; unset preparations inherit the overall preference.
 - Malformed stored JSON is copied to a timestamped recovery key before the active key is reset.
 - Full backups use a versioned `tastylist-backup` envelope and include every profile and the selected profile.
 - Individual exports contain one profile.
