@@ -390,3 +390,22 @@ dialog menu { display: flex; justify-content: flex-end; gap: 0.45rem; padding: 0
   .print-profile-sheet th:nth-child(5), .print-profile-sheet td:nth-child(5) { width: 32%; }
   .print-profile-sheet tr { break-inside: avoid; }
 }
+
+/* Mobile touch behavior: prevent double-tap zoom on controls without disabling pinch zoom. */
+button,
+[role="button"],
+summary,
+.tab-button,
+.rating button,
+.prep-button {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (pointer: coarse) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
