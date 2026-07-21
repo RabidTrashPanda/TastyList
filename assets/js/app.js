@@ -367,22 +367,30 @@ function buildEditorRow(profile, catalogItem, preparations) {
 
   const notes = document.createElement('label');
   notes.className = 'notes-field';
-  notes.textContent = 'Notes';
-  const input = document.createElement('input');
-  input.type = 'text';
+  const notesLabel = document.createElement('span');
+  notesLabel.textContent = 'Notes';
+  const input = document.createElement('textarea');
+  input.rows = 1;
   input.maxLength = 500;
   input.value = item.notes;
   input.placeholder = '';
+  input.addEventListener('input', () => resizeNotes(input));
   input.addEventListener('change', () => {
     const storedItem = getOrCreateItem(profile, catalogItemKey);
     storedItem.notes = input.value.trim();
     touchProfile(profile);
     persist();
   });
-  notes.append(input);
+  notes.append(notesLabel, input);
   row.append(notes);
+  resizeNotes(input);
 
   return row;
+}
+
+function resizeNotes(input) {
+  input.style.height = 'auto';
+  input.style.height = `${Math.min(input.scrollHeight, 128)}px`;
 }
 
 function createPreferenceButton(value, ariaLabel, emptyLabel, onChange) {
