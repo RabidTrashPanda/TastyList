@@ -1,0 +1,14 @@
+{
+  "name": "tastylist",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Private browser-side food preference profiles and comparisons.",
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "serve": "npx --yes serve ."
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

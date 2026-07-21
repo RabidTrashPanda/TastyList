@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Build private food preference profiles, compare two or three people, and check dishes against a profile.">
+  <title>TastyList</title>
+  <link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <header class="hero">
+      <h1>TastyList</h1>
+      <details class="profile-menu">
+        <summary>
+          <span id="profile-menu-name">No profile</span>
+          <span aria-hidden="true">▾</span>
+        </summary>
+        <div class="profile-menu__panel" aria-label="Profile manager">
+          <label class="profile-menu__select">
+            <span>Active profile</span>
+            <select id="profile-select" aria-label="Active profile"></select>
+          </label>
+          <span id="profile-kind" class="profile-kind">No profile</span>
+          <div class="profile-menu__actions">
+            <button id="add-profile" type="button">New profile</button>
+            <button id="rename-profile" class="secondary" type="button">Rename</button>
+            <button id="print-profile" class="secondary" type="button">Print profile</button>
+            <button id="delete-profile" class="danger" type="button">Delete</button>
+          </div>
+        </div>
+      </details>
+    </header>
+
+    <nav class="tabs" role="tablist" aria-label="Workspace sections">
+      <button id="tab-profile" class="tab-button is-active" type="button" role="tab" aria-selected="true" aria-controls="profile" data-tab="profile">Profile</button>
+      <button id="tab-compare" class="tab-button" type="button" role="tab" aria-selected="false" aria-controls="compare" data-tab="compare">Compare</button>
+      <button id="tab-dish-check" class="tab-button" type="button" role="tab" aria-selected="false" aria-controls="dish-check" data-tab="dish-check">Dish check</button>
+    </nav>
+
+    <section id="profile" class="workspace tab-panel" role="tabpanel" aria-labelledby="tab-profile">
+      <div id="profile-tools" class="profile-tools" hidden>
+        <div class="filter-row">
+          <label>
+            <span class="sr-only">Find a food</span>
+            <input id="catalog-search" type="search" placeholder="Find a food">
+          </label>
+          <label>
+            <span class="sr-only">Category</span>
+            <select id="category-filter" aria-label="Category">
+              <option value="">Category</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="profile-actions">
+          <button id="share-profile" type="button">Share</button>
+          <button id="import-share" class="secondary" type="button">Import</button>
+          <details class="utility-menu">
+            <summary>More</summary>
+            <div class="utility-menu__panel">
+              <button id="export-profile" class="secondary" type="button">Export profile</button>
+              <button id="import-profile" class="secondary" type="button">Import profile</button>
+              <button id="export-backup" class="secondary" type="button">Export backup</button>
+              <button id="import-backup" class="secondary" type="button">Restore backup</button>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <div id="profile-empty" class="empty-state">
+        <strong>No profile</strong>
+        <div>
+          <button id="empty-add-profile" type="button">Create profile</button>
+          <button id="empty-import-profile" class="secondary" type="button">Import</button>
+        </div>
+      </div>
+      <div id="editor"></div>
+    </section>
+
+    <section id="compare" class="workspace tab-panel" role="tabpanel" aria-labelledby="tab-compare" hidden>
+      <div id="compare-selectors" class="compare-selectors"></div>
+      <div id="compare-results" class="compare-results"></div>
+    </section>
+
+    <section id="dish-check" class="workspace tab-panel" role="tabpanel" aria-labelledby="tab-dish-check" hidden>
+      <div class="dish-layout">
+        <div>
+          <label class="sr-only" for="dish-input">Dish description or ingredients</label>
+          <textarea id="dish-input" placeholder="Example: grilled salmon, asparagus, lemon, garlic, and rice"></textarea>
+          <button id="run-dish-check" type="button">Check dish</button>
+        </div>
+        <div id="dish-results"></div>
+      </div>
+    </section>
+  </main>
+
+  <input id="import-file" type="file" accept=".json,application/json" hidden>
+  <input id="import-backup-file" type="file" accept=".json,application/json" hidden>
+
+  <dialog id="share-dialog">
+    <form method="dialog">
+      <h2>Share this profile</h2>
+      <p>This code includes profile ratings, preparation preferences, and notes. Share it only with people you trust.</p>
+      <label>
+        Share code
+        <textarea id="share-code" readonly></textarea>
+      </label>
+      <menu>
+        <button value="cancel" class="secondary">Close</button>
+        <button id="copy-share-code" value="cancel" type="button">Copy code</button>
+      </menu>
+    </form>
+  </dialog>
+
+  <dialog id="import-dialog">
+    <form method="dialog">
+      <h2>Import a share code</h2>
+      <label>
+        Share code
+        <textarea id="import-code" placeholder="Paste a TastyList share code"></textarea>
+      </label>
+      <menu>
+        <button value="cancel" class="secondary">Cancel</button>
+        <button id="confirm-import-code" value="cancel" type="button">Import</button>
+      </menu>
+    </form>
+  </dialog>
+
+  <section id="print-profile-sheet" class="print-profile-sheet" aria-hidden="true"></section>
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  <script type="module" src="assets/js/app.js"></script>
+</body>
+</html>
