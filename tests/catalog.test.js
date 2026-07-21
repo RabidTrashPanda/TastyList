@@ -18,3 +18,39 @@ test('catalog keys are unique and match category items', () => {
     categoryItems
   );
 });
+
+
+test('food names do not embed preparation methods', () => {
+  const preparationWords = [
+    'raw',
+    'cooked',
+    'roasted',
+    'steamed',
+    'grilled',
+    'fried',
+    'baked',
+    'boiled',
+    'sautéed',
+    'sauteed',
+    'pickled',
+    'smoked',
+    'cured',
+    'dried',
+    'juiced',
+    'melted',
+    'whipped',
+    'fermented',
+    'toasted',
+    'sprouted',
+    'braised',
+    'seared'
+  ];
+
+  const offenders = flatItems
+    .filter(item => preparationWords.some(word =>
+      new RegExp(`\\b${word}\\b`, 'i').test(item.name)
+    ))
+    .map(item => item.name);
+
+  assert.deepEqual(offenders, []);
+});

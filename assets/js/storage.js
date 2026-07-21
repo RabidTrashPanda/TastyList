@@ -3,6 +3,12 @@ const SCHEMA_VERSION = 1;
 const BACKUP_FORMAT = 'tastylist-backup';
 const BACKUP_VERSION = 1;
 
+const LEGACY_ITEM_KEYS = {
+  yellow_onion_cooked: { key: 'yellow_onion' },
+  garlic_roasted: { key: 'garlic', preparation: 'roasted' },
+  raw_red_onion: { key: 'red_onion', preparation: 'raw' }
+};
+
 export function createEmptyState() {
   return {
     schemaVersion: SCHEMA_VERSION,
@@ -84,10 +90,17 @@ export function normalizeProfile(input, fallbackId = null) {
   const items = {};
 
   if (input.items && typeof input.items === 'object') {
-    for (const [key, rawItem] of Object.entries(input.items)) {
+    for (const [sourceKey, rawItem] of Object.entries(input.items)) {
+      const legacyMapping = LEGACY_ITEM_KEYS[sourceKey];
+      const key = legacyMapping?.key ?? sourceKey;
       const item = normalizeItem(rawItem);
+
+      if (legacyMapping?.preparation && !item.preparations.includes(legacyMapping.preparation)) {
+        item.preparations.push(legacyMapping.preparation);
+      }
+
       if (hasItemData(item)) {
-        items[key] = item;
+        items[key] = items[key] ? mergeItems(items[key], item) : item;
       }
     }
   }
@@ -192,6 +205,22 @@ function isStateDocument(value) {
     && typeof value.profiles === 'object'
     && !Array.isArray(value.profiles)
   );
+}
+
+
+function mergeItems(existing, incoming) {
+  const notes = [existing.notes, incoming.notes]
+    .filter(Boolean)
+    .filter((value, index, values) => values.indexOf(value) === index)
+    .join(' · ')
+    .slice(0, 500);
+
+  return {
+    tolerance: existing.tolerance ?? incoming.tolerance,
+    rating: Math.max(existing.rating, incoming.rating),
+    preparations: [...new Set([...existing.preparations, ...incoming.preparations])],
+    notes
+  };
 }
 
 function hasItemData(item) {
