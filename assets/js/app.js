@@ -335,20 +335,14 @@ function buildEditorRow(profile, catalogItem, preparations) {
   row.append(header);
 
   const prepList = document.createElement('div');
-  prepList.className = 'preference-list';
+  prepList.className = 'preference-strip';
+  prepList.setAttribute('aria-label', `Preparation preferences for ${catalogItem.name}`);
   for (const preparation of preparations) {
     const value = item.preparationPreferences?.[preparation] ?? null;
-    const prepRow = document.createElement('div');
-    prepRow.className = 'preference-row';
-
-    const label = document.createElement('span');
-    label.className = 'preference-row__label';
-    label.textContent = preparation;
-
     const control = createPreferenceButton(
       value,
       `${preparation} preference for ${catalogItem.name}`,
-      value ? preferenceLabel(value) : 'Uses overall',
+      preparation,
       nextValue => {
         const storedItem = getOrCreateItem(profile, catalogItemKey);
         storedItem.preparationPreferences ??= {};
@@ -364,9 +358,10 @@ function buildEditorRow(profile, catalogItem, preparations) {
         renderCompareResults();
       }
     );
-
-    prepRow.append(label, control);
-    prepList.append(prepRow);
+    control.classList.add('preference-button--preparation');
+    control.textContent = preparation;
+    control.title = `${preparation}: ${value ? preferenceLabel(value) : 'uses overall'}. Click to cycle.`;
+    prepList.append(control);
   }
   row.append(prepList);
 

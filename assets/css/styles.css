@@ -268,23 +268,19 @@ textarea { min-height: 9rem; resize: vertical; }
   border-color: rgba(255, 139, 139, 0.5);
   background: rgba(255, 139, 139, 0.08);
 }
-.preference-list {
-  margin: 0.65rem 0 0 1rem;
-  border-left: 1px solid var(--border);
+.preference-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.65rem;
 }
-.preference-row {
-  display: grid;
-  grid-template-columns: minmax(8rem, 1fr) auto;
-  gap: 0.75rem;
-  align-items: center;
-  min-height: 38px;
-  padding: 0.25rem 0 0.25rem 0.75rem;
-  border-bottom: 1px solid rgba(40, 52, 76, 0.45);
-}
-.preference-row:last-child { border-bottom: 0; }
-.preference-row__label {
-  color: var(--muted);
-  font-size: 0.8rem;
+.preference-button--preparation {
+  min-width: 0;
+  min-height: 28px;
+  border-radius: 4px;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 650;
 }
 .rating { display: flex; gap: 0.15rem; }
 .rating button { min-height: auto; padding: 0.1rem; border: 0; color: #526078; background: transparent; font-size: 1.05rem; }
